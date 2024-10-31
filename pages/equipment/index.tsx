@@ -55,8 +55,8 @@ const EquipmentList = () => {
                         <TableBody>
                             {equipment.map(item => (
                                     <TableRow key={item.id}>
-                                        <TableCell className="p-2 text-center align-middle">{item.business}</TableCell>
                                         <TableCell className="p-2 text-center align-middle">{item.name}</TableCell>
+                                        <TableCell className="p-2 text-center align-middle">{item.business}</TableCell>
                                         <TableCell className="p-2 text-center align-middle">{item.type}</TableCell>
                                         <TableCell className="p-2 text-center align-middle">{item.serialNumber}</TableCell>
                                         <TableCell className="p-2 text-center align-middle">{item.location}</TableCell>

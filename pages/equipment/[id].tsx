@@ -1,89 +1,103 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { db } from "../../firebase";
-import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { getDoc, collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 
-type RepairItem = {
-    id: string;
-    date: string;
-    location: string;
-    description: string;
-    cost: number;
-}
 
-const EquipmentDetails = () => {
+export default function EquipmentDetails() {
     const router = useRouter();
     const { id } = router.query;
-    const [repairs, setRepairs] = useState<RepairItem[]>([]);
+    const [equipment, setEquipment] = useState<{ id: string; name: string; location: string; serialNumber: string; type: string; business: string } | null>(null);
+    const [repairs, setRepairs] = useState<{ id: string; date: string; location: string; description: string; cost: string }[]>([]);
 
 
     useEffect(() => {
-        const fetchRepairs = async () => {
-            const q = query(collection(db, "repairs"), where("equipmentId", "==", id));
-            const querySnapshot = await getDocs(q);
-            const items = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                equipmentId: doc.data().equipmentId ?? "",
-                date: doc.data().date ?? "",
-                location: doc.data().location ?? "",
-                description: doc.data().description ?? "",
-                cost: doc.data().cost ?? 0,
-              })) as RepairItem[];
-                
-            setRepairs(items);
-        };
+        if (typeof id === "string"){
+            const fetchEquipmentData = async () => {
+                const equipmentRef = doc(db, "equipment", id);
+                const equipmentSnap = await getDoc(equipmentRef);
 
-        if (id) fetchRepairs();
+                if(equipmentSnap.exists()) {
+                    const equipmentData = equipmentSnap.data() as { name: string; location: string; serialNumber: string; type: string; business: string };
+                    setEquipment({ id: equipmentSnap.id, ...equipmentData});
+                } else {
+                    console.log("No such equipment!");
+                }
+            };
+
+            const fetchRepairs = async () => {
+                const repairsRef = collection(db, "repairs");
+                const q = query(repairsRef, where("equipmentId", "==", id));
+                const querySnapshot = await getDocs(q);
+
+                const repairData = querySnapshot.docs.map((doc) => ({ 
+                    id: doc.id, 
+                    date: doc.data().date,
+                    location: doc.data().location,
+                    description: doc.data().description,
+                    cost: doc.data().cost
+                }));
+                setRepairs(repairData);
+            };
+
+            fetchEquipmentData();
+            fetchRepairs();
+        }
+
 
     }, [id]);
 
     const handleDeleteRepair = async (repairId: string) => {
-        await deleteDoc(doc(db, "repairs", repairId));
-        setRepairs(repairs.filter((repair)=> repair.id !== repairId));
+        try {
+            await deleteDoc(doc(db, "repairs", repairId));
+            setRepairs((prevRepairs) => prevRepairs.filter((repair) => repair.id !== repairId));
+        } catch (error) {
+            console.error("Error deleting repair", error)
+        }
     };
 
+    const handleEditRepair = (repairId: string) => {
+        router.push(`/equipment/${id}/edit/repair/${repairId}`);
+    };
+
+    if(!equipment) return <p>Ładowanie danych urządzenia...</p>
+
     return (
-        <div>
-            {/* <h2>Repairs</h2>
-            {repairs.length > 0 ? (
-                repairs.map((repair, index) => (
-                    <div key={index}>
-                        <p>{repair.date}</p>
-                        <p>{repair.description}</p>
-                    </div>
-            ))) : (
-                <p>Brak napraw dla tego sprzętu</p>
-            )}
-            <a href={`/equipment/${id}/add-repair`}>Dodaj naprawę</a> */}
-            <h2>Historia napraw</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Lokalizacja</th>
-                        <th>Opis</th>
-                        <th>Koszt</th>
-                        <th>Akcje</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <div className="p-6 space-y-4">
+            <div className="bg-gray-100 p-4 rounded-md">
+                <h2 className="text-xl font-bold">{equipment.name}</h2>
+                <p>{equipment.business} {equipment.type}</p>
+                <p>Lokalizacja: {equipment.location}</p>
+                <p>Numer seryjny: {equipment.serialNumber}</p>
+            </div>
+            <Table className="mt-4">
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Lokalizacja</TableHead>
+                        <TableHead>Opis</TableHead>
+                        <TableHead>Koszt</TableHead>
+                        <TableHead>Akcje</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
                     {repairs.map((repair) => (
-                        <tr key={repair.id}>
-                            <td>{repair.date}</td>
-                            <td>{repair.location}</td>
-                            <td>{repair.description}</td>
-                            <td>{repair.cost}</td>
-                            <td>
-                                <button onClick={() => router.push(`/equipment/edit/equipment/${repair.id}`)}>Edytuj</button>
-                                <button onClick={() => handleDeleteRepair(repair.id)}>Usuń</button>
-                            </td>
-                        </tr>
+                        <TableRow>
+                            <TableCell>{repair.date}</TableCell>
+                            <TableCell>{repair.location}</TableCell>
+                            <TableCell>{repair.description}</TableCell>
+                            <TableCell>{repair.cost}</TableCell>
+                            <TableCell>
+                                <Button variant="default" onClick={() => handleEditRepair(repair.id)}>Edytuj</Button>
+                                <Button variant="destructive" onClick={() => handleDeleteRepair(repair.id)} className="ml-2">Usuń</Button>
+                            </TableCell>
+                        </TableRow>
                     ))}
-                </tbody>
-            </table>
-        
+                </TableBody>
+            </Table>
         </div>
     );
 };
 
-export default EquipmentDetails;
