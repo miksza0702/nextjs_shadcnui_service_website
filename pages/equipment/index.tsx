@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 
@@ -17,6 +17,15 @@ type EquipmentItem = {
 
 const EquipmentList = () => {
     const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
+
+    const handleDeleteEquipment = async (equipmendId: string) => {
+        try {
+            await deleteDoc(doc(db, "equipment", equipmendId));
+            setEquipment((prevEquipment) => prevEquipment.filter((equipment) => equipment.id !== equipmendId));
+        } catch (error){
+            console.log("Error deleting equipment", error);
+        }
+    };
 
     useEffect(() => {
         const fetchEquipment = async () => {
@@ -64,7 +73,7 @@ const EquipmentList = () => {
                                             <div className="flex justify-center space-x-1">
                                                 <Button className="btn btn-primary font-bold"><a href={`/equipment/${item.id}`}>View Repairs</a></Button> 
                                                 <Button className="btn btn-edit font-bold"><a href={`/equipment/edit/equipment/${item.id}`}>Edit</a></Button>
-                                                <Button className="btn btn-destructive font-bold">Delete</Button>
+                                                <Button className="btn btn-destructive font-bold" onClick={() => handleDeleteEquipment(item.id)}>Delete</Button>
                                             </div>
                                         </TableCell>
                                     </TableRow>
