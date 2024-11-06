@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 
 type EquipmentItem = {
@@ -17,14 +18,25 @@ type EquipmentItem = {
 
 const EquipmentList = () => {
     const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
 
-    const handleDeleteEquipment = async (equipmendId: string) => {
+
+    const handleDeleteEquipment = async () => {
+        if (!selectedEquipment) return;
+
         try {
-            await deleteDoc(doc(db, "equipment", equipmendId));
-            setEquipment((prevEquipment) => prevEquipment.filter((equipment) => equipment.id !== equipmendId));
+            await deleteDoc(doc(db, "equipment", selectedEquipment.id));
+            setEquipment((prevEquipment) => prevEquipment.filter((equipment) => equipment.id !== selectedEquipment.id));
+            setIsDialogOpen(false);
         } catch (error){
             console.log("Error deleting equipment", error);
         }
+    };
+
+    const openDialog = (equipment: EquipmentItem) => {
+        setSelectedEquipment(equipment);
+        setIsDialogOpen(true);
     };
 
     useEffect(() => {
@@ -73,7 +85,7 @@ const EquipmentList = () => {
                                             <div className="flex justify-center space-x-1">
                                                 <Button className="btn btn-primary font-bold"><a href={`/equipment/${item.id}`}>View Repairs</a></Button> 
                                                 <Button className="btn btn-edit font-bold"><a href={`/equipment/edit/equipment/${item.id}`}>Edit</a></Button>
-                                                <Button className="btn btn-destructive font-bold" onClick={() => handleDeleteEquipment(item.id)}>Delete</Button>
+                                                <Button className="btn btn-destructive font-bold" onClick={() => openDialog(item)}>Delete</Button>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -83,7 +95,18 @@ const EquipmentList = () => {
 
                     <Button className="btn btn-edit font-bold"><a href={`/equipment/add`}>Add Printer</a></Button>
 
-
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogContent className="bg-white shadow-lg rounded-md p-6">
+                            <DialogTitle>Potwierdzenie usunięcia</DialogTitle>
+                            <DialogDescription>
+                                Czy na pewno chcesz usunąć urządzenie "{selectedEquipment?.name}" o numerze seryjnym "{selectedEquipment?.serialNumber}"?
+                            </DialogDescription>
+                            <DialogFooter>
+                                <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>Anuluj</Button>
+                                <Button variant="destructive" onClick={handleDeleteEquipment}>Usuń</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
 
 
             
