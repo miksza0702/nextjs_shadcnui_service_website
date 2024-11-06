@@ -34,7 +34,19 @@ const AddEquipment = () => {
         }),
         location: z.string().min(2, {
             message: "Podaj lokalizacje urządzenia"
-        })
+        }),
+        inventoryNumber: z.string().min(2, {
+            message: "Podaj numer inwentarzowy"
+        }),
+        dateOfPurchase: z.string().nonempty(
+            "Data zakupu jest wymagana"
+        ),
+        sellingCompany: z.string().min(2, {
+            message: "Podaj nazwe firmy z ktorej zakupiono sprzet"
+        }),
+        warranty: z.string().nonempty(
+            "Data gwarancji jest wymagana"
+        ),
     })
 
     type EquipmentFormData = z.infer<typeof formSchema>;
@@ -46,6 +58,10 @@ const AddEquipment = () => {
             type: "",
             serialNumber: "",
             location: "",
+            inventoryNumber: "",
+            dateOfPurchase: new Date().toISOString().split("T")[0],
+            sellingCompany: "",
+            warranty: new Date().toISOString().split("T")[0],
         },
     })
 
@@ -139,6 +155,78 @@ const AddEquipment = () => {
                                 <FormLabel>Lokalizacja urządzenia</FormLabel>
                                 <FormControl>
                                     <Input placeholder="location" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                            
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="inventoryNumber"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Numer inwentarzowy urządzenia</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="inventoryNumber" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                            
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="dateOfPurchase"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Data zakupu sprzętu</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="dateOfPurchase" type="date" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                            
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="sellingCompany"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Nazwa firmy, gdzie zakupiono sprzęt</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="sellingCompany" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                            
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="warranty"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Czas gwarancji</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="warranty" type="date" {...field} />
                                 </FormControl>
                                 <FormDescription>
                                     

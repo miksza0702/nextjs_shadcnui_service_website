@@ -19,7 +19,7 @@ type Repair = {
 export default function EquipmentDetails() {
     const router = useRouter();
     const { id } = router.query;
-    const [equipment, setEquipment] = useState<{ id: string; name: string; location: string; serialNumber: string; type: string; business: string } | null>(null);
+    const [equipment, setEquipment] = useState<{ id: string; name: string; location: string; serialNumber: string; type: string; business: string; inventoryNumber: string; dateOfPurchase: string; sellingCompany: string; warranty: string; } | null>(null);
     const [repairs, setRepairs] = useState<Repair[]>([]);
     const [filteredRepairs, setFilteredRepairs] = useState<Repair[]>([]);
     const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -35,7 +35,7 @@ export default function EquipmentDetails() {
                 const equipmentSnap = await getDoc(equipmentRef);
 
                 if(equipmentSnap.exists()) {
-                    const equipmentData = equipmentSnap.data() as { name: string; location: string; serialNumber: string; type: string; business: string };
+                    const equipmentData = equipmentSnap.data() as { name: string; location: string; serialNumber: string; type: string; business: string; inventoryNumber: string; dateOfPurchase: string; sellingCompany: string; warranty: string; };
                     setEquipment({ id: equipmentSnap.id, ...equipmentData});
                 } else {
                     console.log("No such equipment!");
@@ -52,7 +52,7 @@ export default function EquipmentDetails() {
                     date: doc.data().date,
                     location: doc.data().location,
                     description: doc.data().description,
-                    cost: doc.data().cost
+                    cost: doc.data().cost,
                 }));
                 setRepairs(repairData);
             };
@@ -154,10 +154,10 @@ export default function EquipmentDetails() {
                 <p>{equipment.business} {equipment.type}</p>
                 <p>Lokalizacja: {equipment.location}</p>
                 <p>Numer seryjny: {equipment.serialNumber}</p>
-                <p>Numer inwentarzowy: 013-200/8/80/808</p>
-                <p>Data zakupu: 2022-12-31</p>
-                <p>Firma z której zakupiono sprzęt: Firma-X</p>
-                <p>Gwarancja do: 2024-12-31</p>
+                <p>Numer inwentarzowy: {equipment.inventoryNumber}</p>
+                <p>Data zakupu: {equipment.dateOfPurchase}</p>
+                <p>Firma z której zakupiono sprzęt: {equipment.sellingCompany}</p>
+                <p>Gwarancja do: {equipment.warranty}</p>
             </div>
             <h1 className="text-xl font-bold text-center">Historia napraw</h1>
             {/* Opcje paginacji i wyszukiwania */}
