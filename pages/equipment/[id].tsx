@@ -222,6 +222,13 @@ export default function EquipmentDetails() {
                 <Button onClick={handleExportPDF} className="mr-2 btn btn-destructive font-bold">Export to PDF</Button>
                 <Button onClick={handleExportExcel} className="mr-2 btn btn-edit font-bold">Export to Excel</Button>
                 <Button className="btn btn-primary font-bold"><a href={`/equipment/${id}/add-repair`}>Dodaj awarię</a></Button>
+                <Button><a href={`/equipment/${id}/meters`}>Liczniki drukarki</a></Button>
+                {equipment?.name.toLowerCase().includes("drukarka") && (
+                    <Button onClick={() => router.push(`/equipment/${id}/toner-exchange`)}
+                    >
+                        Wymień toner
+                    </Button>
+                )}
             </div>
         </div>
     );
