@@ -1,6 +1,7 @@
+"use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
-import { db } from "../../../firebase";
+import { useRouter, useParams } from "next/navigation";
+import { db } from "../../../../firebase";
 import { collection, doc, getDocs, addDoc, query, orderBy, onSnapshot } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,7 +21,8 @@ type PageCount = {
 
 const EquipmentMetersPage = () => {
     const router = useRouter();
-    const { id } = router.query; // Equipment ID z URL-a
+    const params = useParams() as { id: string };
+    const { id } = params; // Equipment ID z URL-a
     const [pageCounts, setPageCounts] = useState<PageCount[]>([]);
     const [totalPagesPrinted, setTotalPagesPrinted] = useState(0);
     const [totalCopiedPages, setTotalCopiedPages] = useState(0);

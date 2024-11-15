@@ -1,6 +1,7 @@
+"use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { db } from "../../firebase";
+import { useRouter, useParams } from "next/navigation";
+import { db } from "../../../firebase";
 import { getDoc, collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -17,8 +18,9 @@ type Repair = {
 }
 
 export default function EquipmentDetails() {
+    const params = useParams() as { id: string };
     const router = useRouter();
-    const { id } = router.query;
+    const { id } = params;
     const [equipment, setEquipment] = useState<{ id: string; name: string; location: string; serialNumber: string; type: string; business: string; inventoryNumber: string; dateOfPurchase: string; sellingCompany: string; warranty: string; } | null>(null);
     const [repairs, setRepairs] = useState<Repair[]>([]);
     const [filteredRepairs, setFilteredRepairs] = useState<Repair[]>([]);

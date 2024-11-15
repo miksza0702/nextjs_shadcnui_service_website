@@ -1,6 +1,7 @@
+"use client";
 import { useState } from "react";
-import { useRouter } from "next/router";
-import { db } from "../../../firebase";
+import { useRouter, useParams } from "next/navigation";
+import { db } from "../../../../firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +14,8 @@ import { Label } from "@/components/ui/label";
 
 const AddRepair = () => {
     const router = useRouter();
-    const { id } = router.query;
+    const params = useParams() as { id: string };
+    const { id } = params;
 
     const formSchema = z.object({
         date: z.string().nonempty(

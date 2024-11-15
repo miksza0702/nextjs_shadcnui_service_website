@@ -1,12 +1,13 @@
+"use client";
 import { useState } from "react";
-import { db } from "../../firebase";
+import { db } from "../../../firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 

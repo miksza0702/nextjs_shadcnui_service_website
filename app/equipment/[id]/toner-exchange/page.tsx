@@ -1,6 +1,7 @@
+"use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
-import { db } from "../../../firebase";
+import { useRouter, useParams } from "next/navigation";
+import { db } from "../../../../firebase";
 import { doc, getDoc, updateDoc, collection, addDoc, getDocs, query, where } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const TonerExchangePage = () => {
     const router = useRouter();
-    const { id } = router.query;
+    const params = useParams() as { id: string };
+    const { id } = params;
     const [equipment, setEquipment] = useState<any>(null);
     const [toners, setToners] = useState<any[]>([]);
     const [selectedTonerId, setSelectedTonerId] = useState<string>("");

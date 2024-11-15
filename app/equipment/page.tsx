@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
@@ -7,6 +8,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, D
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { Trash2 } from "lucide-react";
 
 
 type EquipmentItem = {
@@ -177,7 +179,7 @@ const EquipmentList = () => {
                                             <div className="flex justify-center space-x-1">
                                                 <Button className="btn btn-primary font-bold"><a href={`/equipment/${item.id}`}>View Repairs</a></Button> 
                                                 <Button className="btn btn-edit font-bold"><a href={`/equipment/edit/equipment/${item.id}`}>Edit</a></Button>
-                                                <Button className="btn btn-destructive font-bold" onClick={() => openDialog(item)}>Delete</Button>
+                                                <Button className="btn btn-destructive font-bold" onClick={() => openDialog(item)}>Delete <Trash2 className="w-4 h-4 mr-2"/></Button>
                                             </div>
                                         </TableCell>
                                     </TableRow>

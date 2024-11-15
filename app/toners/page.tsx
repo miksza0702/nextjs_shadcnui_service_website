@@ -1,6 +1,7 @@
+"use client";
 import { useState, useEffect } from "react";
 import { db } from "../../firebase";
-import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where, Query, CollectionReference, DocumentData } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -9,6 +10,13 @@ import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
+type TonerItem = {
+    id: string;
+    name: string;
+    performance: string;
+    quantity: string;
+}
 
 const TonerManagementPage = () => {
     const [tonerName, setTonerName] = useState<string>("");
@@ -21,14 +29,24 @@ const TonerManagementPage = () => {
     const [timeRange, setTimeRange] = useState<string>("3");
 
     const [tonerExchanges, setTonerExchanges] = useState<any[]>([]);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [sortConfig, setSortConfig] = useState<{ key: keyof TonerItem; direction: "asc" | "desc" } | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [paginatedToners, setPaginatedToners] = useState<TonerItem[]>([]);
+    const [totalPages, setTotalPages] = useState(1);
+
+
 
     //pobieramy dane o tonerach z naszej bazy
     useEffect(() => {
         const fetchToners = async () => {
-            const tonersRef = collection(db, "toners");
-            const tonersSnap = await getDocs(tonersRef);
-            const tonersData = tonersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setToners(tonersData);
+            const querySnapshot = await getDocs(collection(db, "toners"));
+            const items = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as TonerItem[];
+            setToners(items);
         };
 
         const fetchTonerExchanges = async () => {
@@ -36,11 +54,57 @@ const TonerManagementPage = () => {
             const exchangesSnap = await getDocs(exchangesRef);
             const exchangesData = exchangesSnap.docs.map(doc => doc.data());
             setTonerExchanges(exchangesData);
-        }
+        };
+        
 
         fetchToners();
         fetchTonerExchanges();
     }, []);
+
+    useEffect(() => {
+        let filteredData = toners.filter((toner) => 
+            toner.name.toLowerCase().includes(searchQuery.toLocaleLowerCase())
+        );
+
+        if(sortConfig) {
+            filteredData = filteredData.sort((a, b) => {
+                const aValue = a[sortConfig.key];
+                const bValue = b[sortConfig.key];
+
+                if (typeof aValue === "string" && typeof bValue === "string") {
+                    return sortConfig.direction === "asc"
+                        ? String(aValue).localeCompare(bValue)
+                        : String(bValue).localeCompare(aValue);
+                }
+                return 0;
+            });
+        }
+
+        //ustawienie paginacji
+        const calculatedTotalPages = Math.ceil(filteredData.length / itemsPerPage);
+        setTotalPages(calculatedTotalPages);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+        setPaginatedToners(paginatedData);
+    }, [toners, searchQuery, sortConfig, currentPage, itemsPerPage]);
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages){
+            setCurrentPage(newPage);
+        }
+    };
+
+    const handleSort = (key: keyof TonerItem) => {
+        setSortConfig((prevConfig) => {
+            if (prevConfig && prevConfig.key === key) {
+                return {
+                    key,
+                    direction: prevConfig.direction === "asc" ? "desc" : "asc",
+                };
+            };
+            return { key, direction: "asc" };
+        });
+    };
 
     //filtracja danych wymiany tonerow wedlug wybranego okresu
     const filterExchangesByTime = (months: number) => {
@@ -229,6 +293,30 @@ const TonerManagementPage = () => {
                 <Button onClick={handleAddToner} className="bg-blue-500 text-white">Dodaj toner</Button>
             </div>
 
+            {/* Opcje maginacji i wyszukiwania */}
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <label htmlFor="itemsPerPage">Items per page:</label>
+                    <select
+                        id="itemsPerPage"
+                        value={itemsPerPage}
+                        onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+                        className="border p-1"
+                    >
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={30}>30</option>
+                    </select>
+                    <input
+                        type="text"
+                        placeholder="Search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border p-1"
+                    />
+                </div>
+            </div>
+
             {/* Tabela z zapasem tonerów */}
             <div className="mt-8">
                 <Table>
@@ -241,7 +329,7 @@ const TonerManagementPage = () => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {toners.map((toner) => (
+                    {paginatedToners.map((toner) => (
                     <TableRow key={toner.id}>
                         <TableCell>{toner.name}</TableCell>
                         <TableCell>{toner.performance}</TableCell>
@@ -255,6 +343,12 @@ const TonerManagementPage = () => {
                     ))}
                 </TableBody>
                 </Table>
+                {/* Paginacja strony */}
+                <div className="flex justify-between items-center mt-4">
+                    <Button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>Previous</Button>
+                    <span>Page {currentPage} of {Math.ceil(toners.length / itemsPerPage)}</span>
+                    <Button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === Math.ceil(toners.length / itemsPerPage)}>Next</Button>
+                </div>
 
                 {/* Modal dla róznych operacji */}
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
