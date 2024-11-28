@@ -203,7 +203,7 @@ export default function EquipmentDetails() {
                             <TableCell>{repair.date}</TableCell>
                             <TableCell>{repair.location}</TableCell>
                             <TableCell>{repair.description}</TableCell>
-                            <TableCell>{repair.cost}</TableCell>
+                            <TableCell>{Number(repair.cost).toFixed(2)} zł</TableCell>
                             <TableCell>
                                 <Button variant="default" onClick={() => handleEditRepair(repair.id)}>Edytuj</Button>
                                 <Button variant="destructive" onClick={() => handleDeleteRepair(repair.id)} className="ml-2">Usuń</Button>

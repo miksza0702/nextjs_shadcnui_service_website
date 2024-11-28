@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogOverlay, DialogClose } from "@/components/ui/dialog";
 import { Line } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, BarElement } from "chart.js";
+import { Bar } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend);
 
 type TonerItem = {
     id: string;
@@ -35,6 +36,9 @@ const TonerManagementPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [paginatedToners, setPaginatedToners] = useState<TonerItem[]>([]);
     const [totalPages, setTotalPages] = useState(1);
+
+    const [targetDate, setTargetDate] = useState(new Date());
+    const [tonerNeeds, setTonerNeeds] = useState<any[]>([]);
 
 
 
@@ -87,6 +91,13 @@ const TonerManagementPage = () => {
         const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
         setPaginatedToners(paginatedData);
     }, [toners, searchQuery, sortConfig, currentPage, itemsPerPage]);
+
+    useEffect(() => {
+        if (timeRange && targetDate) {
+            const needs = calculateTonerNeeds(Number(timeRange), targetDate);
+            setTonerNeeds(needs);
+        }
+    }, [timeRange, targetDate]);
 
     const handlePageChange = (newPage: number) => {
         if (newPage >= 1 && newPage <= totalPages){
@@ -254,6 +265,37 @@ const TonerManagementPage = () => {
         }
     }
 
+    const calculateTonerNeeds = (months: number, targetDate: Date) => {
+        const filteredExchanges = filterExchangesByTime(months);
+
+        const tonerStats = filteredExchanges.reduce((acc: any, exchange: any) => {
+            if (!acc[exchange.tonerName]) {
+                acc[exchange.tonerName] = 0;
+            }
+            acc[exchange.tonerName] += 1;
+            return acc;
+        }, {});
+
+        const currentDate = new Date();
+        const totalMonths = 
+            (targetDate.getFullYear() - currentDate.getFullYear()) * 12 +
+            (targetDate.getMonth() - currentDate.getMonth());
+        
+        const tonerNeeds = Object.entries(tonerStats).map(([tonerName, totalExchanges]) => {
+            const averageMonthlyUsage = Math.ceil(Number(totalExchanges) / months); 
+            const neededToners = Math.ceil(averageMonthlyUsage * totalMonths);
+            
+            const stock = toners.find((item) => item.name === tonerName);
+            const quantity = stock?.quantity || 0;
+
+            const mustBuy = Math.max(0, neededToners - quantity);
+
+            return { tonerName, neededToners, quantity, mustBuy };
+        });
+
+        return tonerNeeds;
+    };
+
     return (
         <div className="p-6 space-y-4">
             <h1 className="text-2xl font-bold">Zarządzanie tonerami</h1>
@@ -387,26 +429,157 @@ const TonerManagementPage = () => {
                     </DialogContent>
                 </Dialog>
             </div>
+            <div>
+                <div className="mt-4">
+                    <label className="block">Wybierz zakres czasowy</label>
+                    <select 
+                        value={timeRange}
+                        onChange={handleTimeRangeChange}
+                        className="border p-2"
+                    >
+                        <option value="3">3 miesiące</option>
+                        <option value="6">6 miesiący</option>
+                        <option value="12">12 miesiący</option>
+                    </select>
+                </div>
 
-            <div className="mt-4">
-                <label className="block">Wybierz zakres czasowy</label>
-                <select 
-                    value={timeRange}
-                    onChange={handleTimeRangeChange}
-                    className="border p-2"
-                >
-                    <option value="3">3 miesiące</option>
-                    <option value="6">6 miesiący</option>
-                    <option value="12">12 miesiący</option>
-                </select>
+                <div className="mt-8">
+                    <h2 className="text-xl font-bold">Wydane tonery</h2>
+                    <Line data={tonerExchangesChartData} options={{ responsive: true }} />
+
+                    <h2 className="text-xl font-bold mt-8">Najczęsciej wymieniane tonery w drukarkach</h2>
+                    <Line data={printerExchangesChartData} options={{ responsive: true }} />
+                </div>
             </div>
+            
 
-            <div className="mt-8">
-                <h2 className="text-xl font-bold">Wydane tonery</h2>
-                <Line data={tonerExchangesChartData} options={{ responsive: true }} />
+            <div className="p-6 space-y-4">
+                <h1 className="text-2xl font-bold">Prognoza zużycia tonerów</h1>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block">Zakres czasu (miesiące)</label>
+                        <select 
+                            value={timeRange}
+                            onChange={handleTimeRangeChange}
+                            className="border p-2"
+                        >
+                            <option value="3">Ostatnie 3 miesiące</option>
+                            <option value="6">Ostatnie 6 miesięcy</option>
+                            <option value="12">Ostatnie 12 miesięcy</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block">Data końcowa</label>
+                        <Input 
+                            type="date"
+                            onChange={(e) => setTargetDate(new Date(e.target.value))}
+                            className="border p-2"
+                        />
+                    </div>
+                </div>
+                <div>
+                    {tonerNeeds.length > 0 && (
+                        <>
+                            <h2 className="text-lg font-bold">Potrzebne tonery</h2>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Toner</TableHead>
+                                        <TableHead>Potrzebna liczba</TableHead>
+                                        <TableHead>Stan na magyznie</TableHead>
+                                        <TableHead>Musimy zakupić (tonerów)</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {tonerNeeds.map((toner) => (
+                                        <TableRow key={toner.tonerName}>
+                                            <TableCell>{toner.tonerName}</TableCell>
+                                            <TableCell>{toner.neededToners}</TableCell>
+                                            <TableCell>{toner.quantity}</TableCell>
+                                            <TableCell>{toner.mustBuy}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </>
+                    )}
+                </div>
 
-                <h2 className="text-xl font-bold mt-8">Najczęsciej wymieniane tonery w drukarkach</h2>
-                <Line data={printerExchangesChartData} options={{ responsive: true }} />
+                <div>
+                    {tonerNeeds.length > 0 && (
+                        // <Line
+                        //     data={{
+                        //         labels: tonerNeeds.map((toner) => toner.tonerName),
+                        //         datasets: [
+                        //             {
+                        //                 label: "Potrzebna liczba tonerów",
+                        //                 data: tonerNeeds.map((toner) => toner.neededToners),
+                        //                 borderColor: "rgba(54, 162, 235, 1)",
+                        //                 backgroundColor: "rgba(54, 162, 235, 0.2)",
+                        //                 fill: true,
+                        //             },
+                        //         ],
+                        //     }}
+                        //     options={{
+                        //         responsive: true,
+                        //         plugins: {
+                        //             legend: {position: "top"},
+                        //         }
+                        //     }}
+                        // />
+
+                        <Bar
+                            data={{
+                                labels: tonerNeeds.map((toner) => toner.tonerName),
+                                datasets: [
+                                    {
+                                        label: "Stan na magazynie",
+                                        data: tonerNeeds.map((toner) => toner.quantity),
+                                        backgroundColor: "rgba(75, 192, 192, 0.6)",
+                                        borderColor: "rgba(75, 192, 192, 1)",
+                                        borderWidth: 1,
+                                    },
+                                    {
+                                        label: "Muismy zakupić",
+                                        data: tonerNeeds.map((toner) => toner.mustBuy),
+                                        backgroundColor: "rgba(255, 99, 132, 0.6)",
+                                        borderColor: "rgba(255, 99, 132, 1)",
+                                        borderWidth: 1,
+                                    },
+                                ],
+                            }}
+                            options={{
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: "top",
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: (tooltipItem) => `${tooltipItem.dataset.label}: ${tooltipItem.raw}`,
+                                        },
+                                    },
+                                },
+                                scales: {
+                                    x: {
+                                        title: {
+                                            display: true,
+                                            text: "Nazwa tonerów",
+                                        },
+                                    },
+                                    y: {
+                                        title: {
+                                            display: true,
+                                            text: "Ilość",
+                                        },
+                                        beginAtZero: true,
+                                    },
+                                },
+                            }}
+                        />
+                    )}
+                </div>
+
             </div>
         </div>
     );
